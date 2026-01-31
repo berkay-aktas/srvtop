@@ -1,3 +1,6 @@
+use std::time::Instant;
+
+use ratatui::widgets::ScrollbarState;
 use sysinfo::System;
 
 use crate::filter;
@@ -46,10 +49,13 @@ pub struct App {
     pub status_timer: u8,
     pub system: System,
     pub filter_port: Option<u16>,
+    pub last_refresh: Instant,
+    pub scrollbar_state: ScrollbarState,
+    pub tick_rate_secs: u64,
 }
 
 impl App {
-    pub fn new(show_all: bool, filter_port: Option<u16>) -> Self {
+    pub fn new(show_all: bool, filter_port: Option<u16>, tick_rate_secs: u64) -> Self {
         let mut system = System::new_all();
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         system.refresh_all();
@@ -66,6 +72,9 @@ impl App {
             status_timer: 0,
             system,
             filter_port,
+            last_refresh: Instant::now(),
+            scrollbar_state: ScrollbarState::default(),
+            tick_rate_secs,
         };
         app.refresh();
         app
@@ -97,6 +106,11 @@ impl App {
         if self.selected >= self.processes.len() && !self.processes.is_empty() {
             self.selected = self.processes.len() - 1;
         }
+
+        self.last_refresh = Instant::now();
+        self.scrollbar_state = self.scrollbar_state
+            .content_length(self.processes.len())
+            .position(self.selected);
     }
 
     pub fn sort(&self, processes: &mut [DevProcess]) {
@@ -149,6 +163,9 @@ mod tests {
             status_timer: 0,
             system: System::new(),
             filter_port: None,
+            last_refresh: Instant::now(),
+            scrollbar_state: ScrollbarState::default(),
+            tick_rate_secs: 3,
         };
         let mut procs = make_processes();
         app.sort(&mut procs);
@@ -171,6 +188,9 @@ mod tests {
             status_timer: 0,
             system: System::new(),
             filter_port: None,
+            last_refresh: Instant::now(),
+            scrollbar_state: ScrollbarState::default(),
+            tick_rate_secs: 3,
         };
         let mut procs = make_processes();
         app.sort(&mut procs);
@@ -192,6 +212,9 @@ mod tests {
             status_timer: 0,
             system: System::new(),
             filter_port: None,
+            last_refresh: Instant::now(),
+            scrollbar_state: ScrollbarState::default(),
+            tick_rate_secs: 3,
         };
         let mut procs = make_processes();
         app.sort(&mut procs);
@@ -214,6 +237,9 @@ mod tests {
             status_timer: 0,
             system: System::new(),
             filter_port: None,
+            last_refresh: Instant::now(),
+            scrollbar_state: ScrollbarState::default(),
+            tick_rate_secs: 3,
         };
         assert!(app.selected_process().is_none());
     }

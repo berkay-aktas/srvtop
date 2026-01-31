@@ -53,13 +53,13 @@ fn main() -> color_eyre::Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     // App + event loop
-    let mut app = App::new(cli.all, cli.port);
+    let mut app = App::new(cli.all, cli.port, cli.interval);
     let mut events = EventHandler::new(cli.interval);
 
     while app.running {
         // Render
         terminal.draw(|frame| {
-            ui::draw(frame, &app);
+            ui::draw(frame, &mut app);
         })?;
 
         // Handle events
