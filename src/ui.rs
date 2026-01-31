@@ -11,22 +11,6 @@ use ratatui::{
 
 use crate::app::{App, SortColumn, SortDirection};
 
-const SPLASH_ART: &str = r#"
-        ╭──────────────────╮
-        │  ┌──┐  ┌──┐  ◉  │
-        │  └──┘  └──┘  ◉  │
-        │  ┌──┐  ┌──┐  ◉  │
-        │  └──┘  └──┘     │
-        ╰───────┬──────────╯
-            ┌───┴───┐
-            │ ~~~~~ │
-            │ ~~~~~ │
-            └───────┘
-          ┌───┐   ┌───┐
-          │   │   │   │
-          └───┘   └───┘
-"#;
-
 const BORDER_SET: border::Set = border::Set {
     top_left: "╭",
     top_right: "╮",
@@ -432,39 +416,4 @@ fn draw_kill_confirm(frame: &mut Frame, app: &App) {
 
     frame.render_widget(Clear, popup_area);
     frame.render_widget(popup, popup_area);
-}
-
-pub fn draw_splash(frame: &mut Frame) {
-    let area = frame.area();
-
-    let lines: Vec<Line> = vec![
-        Line::from(""),
-        Line::from(""),
-    ]
-    .into_iter()
-    .chain(SPLASH_ART.lines().map(|l| {
-        Line::from(Span::styled(l, Style::default().fg(Color::Magenta)))
-    }))
-    .chain(vec![
-        Line::from(""),
-        Line::from(Span::styled(
-            "srvtop",
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            "like htop, but for your dev servers",
-            Style::default().fg(Color::DarkGray),
-        )),
-        Line::from(""),
-        Line::from(Span::styled(
-            format!("v{}", env!("CARGO_PKG_VERSION")),
-            Style::default().fg(Color::DarkGray),
-        )),
-    ])
-    .collect();
-
-    let splash = Paragraph::new(lines).alignment(Alignment::Center);
-    frame.render_widget(splash, area);
 }
