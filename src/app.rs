@@ -120,3 +120,99 @@ impl App {
         self.processes.get(self.selected)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_processes() -> Vec<DevProcess> {
+        vec![
+            DevProcess::test("node", 3000),
+            DevProcess::test("postgres", 5432),
+            DevProcess::test("redis", 6379),
+        ]
+    }
+
+    #[test]
+    fn sort_by_port_ascending() {
+        let app = App {
+            running: true,
+            processes: Vec::new(),
+            selected: 0,
+            show_all: false,
+            sort_column: SortColumn::Port,
+            sort_direction: SortDirection::Ascending,
+            show_kill_confirm: false,
+            status_message: None,
+            status_timer: 0,
+            system: System::new(),
+            filter_port: None,
+        };
+        let mut procs = make_processes();
+        app.sort(&mut procs);
+        assert_eq!(procs[0].port, 3000);
+        assert_eq!(procs[1].port, 5432);
+        assert_eq!(procs[2].port, 6379);
+    }
+
+    #[test]
+    fn sort_by_port_descending() {
+        let app = App {
+            running: true,
+            processes: Vec::new(),
+            selected: 0,
+            show_all: false,
+            sort_column: SortColumn::Port,
+            sort_direction: SortDirection::Descending,
+            show_kill_confirm: false,
+            status_message: None,
+            status_timer: 0,
+            system: System::new(),
+            filter_port: None,
+        };
+        let mut procs = make_processes();
+        app.sort(&mut procs);
+        assert_eq!(procs[0].port, 6379);
+        assert_eq!(procs[2].port, 3000);
+    }
+
+    #[test]
+    fn sort_by_name() {
+        let app = App {
+            running: true,
+            processes: Vec::new(),
+            selected: 0,
+            show_all: false,
+            sort_column: SortColumn::Name,
+            sort_direction: SortDirection::Ascending,
+            show_kill_confirm: false,
+            status_message: None,
+            status_timer: 0,
+            system: System::new(),
+            filter_port: None,
+        };
+        let mut procs = make_processes();
+        app.sort(&mut procs);
+        assert_eq!(procs[0].name, "node");
+        assert_eq!(procs[1].name, "postgres");
+        assert_eq!(procs[2].name, "redis");
+    }
+
+    #[test]
+    fn selected_process_empty() {
+        let app = App {
+            running: true,
+            processes: Vec::new(),
+            selected: 0,
+            show_all: false,
+            sort_column: SortColumn::Port,
+            sort_direction: SortDirection::Ascending,
+            show_kill_confirm: false,
+            status_message: None,
+            status_timer: 0,
+            system: System::new(),
+            filter_port: None,
+        };
+        assert!(app.selected_process().is_none());
+    }
+}
