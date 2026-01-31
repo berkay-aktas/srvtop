@@ -8,6 +8,36 @@ pub struct DevProcess {
     pub cpu_percent: f32,
     pub memory_bytes: u64,
     pub memory_display: String,
+    pub uptime_secs: u64,
+    pub uptime_display: String,
+}
+
+pub fn format_uptime(secs: u64) -> String {
+    const MINUTE: u64 = 60;
+    const HOUR: u64 = 60 * MINUTE;
+    const DAY: u64 = 24 * HOUR;
+
+    if secs >= DAY {
+        let d = secs / DAY;
+        let h = (secs % DAY) / HOUR;
+        if h > 0 {
+            format!("{}d{}h", d, h)
+        } else {
+            format!("{}d", d)
+        }
+    } else if secs >= HOUR {
+        let h = secs / HOUR;
+        let m = (secs % HOUR) / MINUTE;
+        if m > 0 {
+            format!("{}h{}m", h, m)
+        } else {
+            format!("{}h", h)
+        }
+    } else if secs >= MINUTE {
+        format!("{}m", secs / MINUTE)
+    } else {
+        format!("{}s", secs)
+    }
 }
 
 pub fn format_bytes(bytes: u64) -> String {
@@ -39,18 +69,20 @@ pub fn scan(system: &System) -> Result<Vec<DevProcess>, String> {
         let port = listener.socket.port();
         let protocol = format!("{:?}", listener.protocol);
 
-        let (name, cpu_percent, memory_bytes) =
+        let (name, cpu_percent, memory_bytes, uptime_secs) =
             if let Some(proc) = system.process(Pid::from(pid as usize)) {
                 (
                     proc.name().to_string_lossy().to_string(),
                     proc.cpu_usage(),
                     proc.memory(),
+                    proc.run_time(),
                 )
             } else {
-                (listener.process.name.clone(), 0.0, 0)
+                (listener.process.name.clone(), 0.0, 0, 0)
             };
 
         let memory_display = format_bytes(memory_bytes);
+        let uptime_display = format_uptime(uptime_secs);
 
         processes.push(DevProcess {
             pid,
@@ -60,6 +92,8 @@ pub fn scan(system: &System) -> Result<Vec<DevProcess>, String> {
             cpu_percent,
             memory_bytes,
             memory_display,
+            uptime_secs,
+            uptime_display,
         });
     }
 
@@ -77,6 +111,8 @@ impl DevProcess {
             cpu_percent: 0.0,
             memory_bytes: 0,
             memory_display: "0 B".to_string(),
+            uptime_secs: 0,
+            uptime_display: "0s".to_string(),
         }
     }
 }
@@ -84,6 +120,30 @@ impl DevProcess {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn format_uptime_seconds() {
+        assert_eq!(format_uptime(0), "0s");
+        assert_eq!(format_uptime(45), "45s");
+    }
+
+    #[test]
+    fn format_uptime_minutes() {
+        assert_eq!(format_uptime(60), "1m");
+        assert_eq!(format_uptime(300), "5m");
+    }
+
+    #[test]
+    fn format_uptime_hours() {
+        assert_eq!(format_uptime(3600), "1h");
+        assert_eq!(format_uptime(5400), "1h30m");
+    }
+
+    #[test]
+    fn format_uptime_days() {
+        assert_eq!(format_uptime(86400), "1d");
+        assert_eq!(format_uptime(97200), "1d3h");
+    }
 
     #[test]
     fn format_bytes_zero() {

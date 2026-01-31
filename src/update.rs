@@ -86,7 +86,8 @@ pub fn update(app: &mut App, msg: Message) {
                 SortColumn::Port => SortColumn::Proto,
                 SortColumn::Proto => SortColumn::Cpu,
                 SortColumn::Cpu => SortColumn::Memory,
-                SortColumn::Memory => SortColumn::Pid,
+                SortColumn::Memory => SortColumn::Uptime,
+                SortColumn::Uptime => SortColumn::Pid,
             };
             app.sort_direction = SortDirection::Ascending;
             app.refresh();

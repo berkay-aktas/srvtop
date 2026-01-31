@@ -11,6 +11,7 @@ pub enum SortColumn {
     Proto,
     Cpu,
     Memory,
+    Uptime,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -108,6 +109,7 @@ impl App {
                 SortColumn::Proto => a.protocol.cmp(&b.protocol),
                 SortColumn::Cpu => a.cpu_percent.partial_cmp(&b.cpu_percent).unwrap_or(std::cmp::Ordering::Equal),
                 SortColumn::Memory => a.memory_bytes.cmp(&b.memory_bytes),
+                SortColumn::Uptime => a.uptime_secs.cmp(&b.uptime_secs),
             };
             match dir {
                 SortDirection::Ascending => ord,

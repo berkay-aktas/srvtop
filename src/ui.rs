@@ -56,6 +56,7 @@ fn draw_table(frame: &mut Frame, app: &App, area: Rect) {
         format!("PROTO{}", sort_indicator(app, SortColumn::Proto)),
         format!("CPU%{}", sort_indicator(app, SortColumn::Cpu)),
         format!("MEMORY{}", sort_indicator(app, SortColumn::Memory)),
+        format!("UPTIME{}", sort_indicator(app, SortColumn::Uptime)),
     ];
 
     let header = Row::new(
@@ -83,6 +84,7 @@ fn draw_table(frame: &mut Frame, app: &App, area: Rect) {
                 Cell::from(p.protocol.clone()),
                 Cell::from(format!("{:.1}", p.cpu_percent)),
                 Cell::from(p.memory_display.clone()),
+                Cell::from(p.uptime_display.clone()),
             ])
             .style(style)
         })
@@ -95,6 +97,7 @@ fn draw_table(frame: &mut Frame, app: &App, area: Rect) {
         Constraint::Length(6),
         Constraint::Length(8),
         Constraint::Length(10),
+        Constraint::Length(8),
     ];
 
     if app.processes.is_empty() {
