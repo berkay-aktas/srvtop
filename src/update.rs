@@ -80,7 +80,7 @@ pub fn update(app: &mut App, msg: Message) {
             if app.show_kill_confirm {
                 return;
             }
-            let next = match app.sort_column {
+            app.sort_column = match app.sort_column {
                 SortColumn::Pid => SortColumn::Name,
                 SortColumn::Name => SortColumn::Port,
                 SortColumn::Port => SortColumn::Proto,
@@ -88,15 +88,17 @@ pub fn update(app: &mut App, msg: Message) {
                 SortColumn::Cpu => SortColumn::Memory,
                 SortColumn::Memory => SortColumn::Pid,
             };
-            if next == app.sort_column {
-                app.sort_direction = match app.sort_direction {
-                    SortDirection::Ascending => SortDirection::Descending,
-                    SortDirection::Descending => SortDirection::Ascending,
-                };
-            } else {
-                app.sort_column = next;
-                app.sort_direction = SortDirection::Ascending;
+            app.sort_direction = SortDirection::Ascending;
+            app.refresh();
+        }
+        Message::ToggleSortDirection => {
+            if app.show_kill_confirm {
+                return;
             }
+            app.sort_direction = match app.sort_direction {
+                SortDirection::Ascending => SortDirection::Descending,
+                SortDirection::Descending => SortDirection::Ascending,
+            };
             app.refresh();
         }
     }

@@ -30,6 +30,7 @@ pub enum Message {
     Refresh,
     ToggleAll,
     CycleSort,
+    ToggleSortDirection,
 }
 
 pub struct App {
@@ -90,7 +91,7 @@ impl App {
         }
     }
 
-    pub fn sort(&self, processes: &mut Vec<DevProcess>) {
+    pub fn sort(&self, processes: &mut [DevProcess]) {
         let dir = self.sort_direction;
         processes.sort_by(|a, b| {
             let ord = match self.sort_column {

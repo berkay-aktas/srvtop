@@ -42,5 +42,5 @@ pub fn is_dev_relevant(process: &DevProcess) -> bool {
 }
 
 pub fn filter_dev(processes: Vec<DevProcess>) -> Vec<DevProcess> {
-    processes.into_iter().filter(|p| is_dev_relevant(p)).collect()
+    processes.into_iter().filter(is_dev_relevant).collect()
 }

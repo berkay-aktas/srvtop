@@ -54,6 +54,7 @@ impl EventHandler {
             KeyCode::Char('r') => Some(Message::Refresh),
             KeyCode::Char('a') => Some(Message::ToggleAll),
             KeyCode::Char('s') => Some(Message::CycleSort),
+            KeyCode::Char('S') => Some(Message::ToggleSortDirection),
             _ => None,
         }
     }

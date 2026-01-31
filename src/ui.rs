@@ -118,6 +118,8 @@ fn draw_footer(frame: &mut Frame, app: &App, area: Rect) {
         Span::raw(" kill │ "),
         Span::styled("s", Style::default().fg(Color::Cyan)),
         Span::raw(" sort │ "),
+        Span::styled("S", Style::default().fg(Color::Cyan)),
+        Span::raw(" reverse │ "),
         Span::styled("a", Style::default().fg(Color::Cyan)),
         Span::raw(" all │ "),
         Span::styled("r", Style::default().fg(Color::Cyan)),
