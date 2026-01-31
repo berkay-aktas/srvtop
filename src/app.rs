@@ -73,7 +73,14 @@ impl App {
     pub fn refresh(&mut self) {
         self.system.refresh_all();
 
-        let mut processes = scanner::scan(&self.system);
+        let mut processes = match scanner::scan(&self.system) {
+            Ok(p) => p,
+            Err(e) => {
+                self.status_message = Some(e);
+                self.status_timer = 3;
+                return;
+            }
+        };
 
         if !self.show_all {
             processes = filter::filter_dev(processes);

@@ -5,7 +5,6 @@ pub struct DevProcess {
     pub name: String,
     pub port: u16,
     pub protocol: String,
-    pub address: String,
     pub cpu_percent: f32,
     pub memory_bytes: u64,
     pub memory_display: String,
@@ -27,10 +26,10 @@ pub fn format_bytes(bytes: u64) -> String {
     }
 }
 
-pub fn scan(system: &System) -> Vec<DevProcess> {
+pub fn scan(system: &System) -> Result<Vec<DevProcess>, String> {
     let listeners = match listeners::get_all() {
         Ok(l) => l,
-        Err(_) => return Vec::new(),
+        Err(e) => return Err(format!("Failed to scan ports: {}", e)),
     };
 
     let mut processes = Vec::new();
@@ -38,7 +37,6 @@ pub fn scan(system: &System) -> Vec<DevProcess> {
     for listener in listeners {
         let pid = listener.process.pid;
         let port = listener.socket.port();
-        let address = listener.socket.ip().to_string();
         let protocol = format!("{:?}", listener.protocol);
 
         let (name, cpu_percent, memory_bytes) =
@@ -59,12 +57,11 @@ pub fn scan(system: &System) -> Vec<DevProcess> {
             name,
             port,
             protocol,
-            address,
             cpu_percent,
             memory_bytes,
             memory_display,
         });
     }
 
-    processes
+    Ok(processes)
 }
