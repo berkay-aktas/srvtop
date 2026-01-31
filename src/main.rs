@@ -6,6 +6,7 @@ mod ui;
 mod update;
 
 use std::io;
+use std::time::{Duration, Instant};
 
 use clap::Parser;
 use crossterm::{
@@ -51,6 +52,18 @@ fn main() -> color_eyre::Result<()> {
     execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
+
+    // Splash screen
+    let splash_duration = Duration::from_millis(1500);
+    let splash_start = Instant::now();
+    terminal.draw(ui::draw_splash)?;
+    while splash_start.elapsed() < splash_duration {
+        if crossterm::event::poll(Duration::from_millis(50))? {
+            if let crossterm::event::Event::Key(_) = crossterm::event::read()? {
+                break;
+            }
+        }
+    }
 
     // App + event loop
     let mut app = App::new(cli.all, cli.port, cli.interval);
