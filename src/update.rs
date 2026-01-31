@@ -31,7 +31,10 @@ pub fn update(app: &mut App, msg: Message) {
             }
             if app.selected > 0 {
                 app.selected -= 1;
+            } else if !app.processes.is_empty() {
+                app.selected = app.processes.len() - 1;
             }
+            app.scrollbar_state = app.scrollbar_state.position(app.selected);
         }
         Message::NavigateDown => {
             if app.show_kill_confirm {
@@ -39,7 +42,10 @@ pub fn update(app: &mut App, msg: Message) {
             }
             if app.selected + 1 < app.processes.len() {
                 app.selected += 1;
+            } else {
+                app.selected = 0;
             }
+            app.scrollbar_state = app.scrollbar_state.position(app.selected);
         }
         Message::Kill => {
             if !app.show_kill_confirm && app.selected_process().is_some() {
