@@ -1,28 +1,69 @@
+mod app;
+mod event;
 mod filter;
 mod scanner;
 
-use sysinfo::System;
+use std::io;
 
-fn main() {
-    let mut system = System::new_all();
-    std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-    system.refresh_all();
+use crossterm::{
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+use ratatui::prelude::*;
 
-    let all = scanner::scan(&system);
-    let dev_only = filter::filter_dev(all);
+use app::{App, Message};
+use event::EventHandler;
 
-    println!(
-        "{:<8} {:<20} {:<7} {:<6} {:<8} {:<10}",
-        "PID", "NAME", "PORT", "PROTO", "CPU%", "MEMORY"
-    );
-    println!("{}", "-".repeat(60));
+fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
 
-    for p in &dev_only {
-        println!(
-            "{:<8} {:<20} {:<7} {:<6} {:<8.1} {:<10}",
-            p.pid, p.name, p.port, p.protocol, p.cpu_percent, p.memory_display
-        );
+    // Terminal setup
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
+
+    // App + event loop
+    let mut app = App::new(false, None);
+    let mut events = EventHandler::new(3);
+
+    while app.running {
+        // Render
+        terminal.draw(|frame| {
+            frame.render_widget(
+                ratatui::widgets::Paragraph::new(format!(
+                    "srvtop — {} processes (press q to quit)",
+                    app.processes.len()
+                )),
+                frame.area(),
+            );
+        })?;
+
+        // Handle events
+        if let Some(msg) = events.next() {
+            match msg {
+                Message::Quit => app.running = false,
+                Message::Tick | Message::Refresh => app.refresh(),
+                Message::NavigateUp => {
+                    if app.selected > 0 {
+                        app.selected -= 1;
+                    }
+                }
+                Message::NavigateDown => {
+                    if app.selected + 1 < app.processes.len() {
+                        app.selected += 1;
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 
-    println!("\n{} dev-relevant processes found", dev_only.len());
+    // Terminal teardown
+    disable_raw_mode()?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+    terminal.show_cursor()?;
+
+    Ok(())
 }
