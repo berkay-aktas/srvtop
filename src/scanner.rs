@@ -65,3 +65,51 @@ pub fn scan(system: &System) -> Result<Vec<DevProcess>, String> {
 
     Ok(processes)
 }
+
+#[cfg(test)]
+impl DevProcess {
+    pub fn test(name: &str, port: u16) -> Self {
+        Self {
+            pid: 1000,
+            name: name.to_string(),
+            port,
+            protocol: "TCP".to_string(),
+            cpu_percent: 0.0,
+            memory_bytes: 0,
+            memory_display: "0 B".to_string(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_bytes_zero() {
+        assert_eq!(format_bytes(0), "0 B");
+    }
+
+    #[test]
+    fn format_bytes_bytes() {
+        assert_eq!(format_bytes(512), "512 B");
+    }
+
+    #[test]
+    fn format_bytes_kb() {
+        assert_eq!(format_bytes(1024), "1.0 KB");
+        assert_eq!(format_bytes(1536), "1.5 KB");
+    }
+
+    #[test]
+    fn format_bytes_mb() {
+        assert_eq!(format_bytes(1024 * 1024), "1.0 MB");
+        assert_eq!(format_bytes(25 * 1024 * 1024), "25.0 MB");
+    }
+
+    #[test]
+    fn format_bytes_gb() {
+        assert_eq!(format_bytes(1024 * 1024 * 1024), "1.0 GB");
+        assert_eq!(format_bytes(2 * 1024 * 1024 * 1024), "2.0 GB");
+    }
+}
