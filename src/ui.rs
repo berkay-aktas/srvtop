@@ -97,6 +97,25 @@ fn draw_table(frame: &mut Frame, app: &App, area: Rect) {
         Constraint::Length(10),
     ];
 
+    if app.processes.is_empty() {
+        let msg = if app.show_all {
+            "No listening processes found"
+        } else {
+            "No dev servers found (press 'a' to show all)"
+        };
+        let empty = Paragraph::new(msg)
+            .style(Style::default().fg(Color::DarkGray))
+            .alignment(ratatui::layout::Alignment::Center);
+        let centered = Layout::vertical([
+            Constraint::Percentage(40),
+            Constraint::Length(1),
+            Constraint::Min(0),
+        ])
+        .split(area);
+        frame.render_widget(empty, centered[1]);
+        return;
+    }
+
     let table = Table::new(rows, widths)
         .header(header)
         .block(Block::default().borders(Borders::NONE));
