@@ -2,7 +2,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, Paragraph, Row, Table},
+    widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
     Frame,
 };
 
@@ -19,6 +19,10 @@ pub fn draw(frame: &mut Frame, app: &App) {
     draw_header(frame, app, chunks[0]);
     draw_table(frame, app, chunks[1]);
     draw_footer(frame, app, chunks[2]);
+
+    if app.show_kill_confirm {
+        draw_kill_confirm(frame, app);
+    }
 }
 
 fn draw_header(frame: &mut Frame, app: &App, area: Rect) {
@@ -122,4 +126,31 @@ fn draw_footer(frame: &mut Frame, app: &App, area: Rect) {
         status,
     ]);
     frame.render_widget(Paragraph::new(footer), area);
+}
+
+fn draw_kill_confirm(frame: &mut Frame, app: &App) {
+    let area = frame.area();
+    let popup_width = 50u16.min(area.width.saturating_sub(4));
+    let popup_height = 5u16;
+    let x = (area.width.saturating_sub(popup_width)) / 2;
+    let y = (area.height.saturating_sub(popup_height)) / 2;
+    let popup_area = Rect::new(x, y, popup_width, popup_height);
+
+    let text = if let Some(p) = app.selected_process() {
+        format!("Kill {} (PID {}) on :{}? [y/n]", p.name, p.pid, p.port)
+    } else {
+        "No process selected".to_string()
+    };
+
+    let popup = Paragraph::new(text)
+        .style(Style::default().fg(Color::White))
+        .block(
+            Block::default()
+                .title(" Confirm Kill ")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Red)),
+        );
+
+    frame.render_widget(Clear, popup_area);
+    frame.render_widget(popup, popup_area);
 }
