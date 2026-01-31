@@ -7,6 +7,7 @@ mod update;
 
 use std::io;
 
+use clap::Parser;
 use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -16,8 +17,25 @@ use ratatui::prelude::*;
 use app::App;
 use event::EventHandler;
 
+#[derive(Parser)]
+#[command(name = "srvtop", version, about = "Like htop, but for your dev servers")]
+struct Cli {
+    /// Show all listening processes, not just dev-relevant ones
+    #[arg(short, long)]
+    all: bool,
+
+    /// Refresh interval in seconds
+    #[arg(short = 'n', long = "interval", default_value_t = 3)]
+    interval: u64,
+
+    /// Filter to a specific port
+    #[arg(short, long)]
+    port: Option<u16>,
+}
+
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
+    let cli = Cli::parse();
 
     // Terminal setup
     enable_raw_mode()?;
@@ -27,8 +45,8 @@ fn main() -> color_eyre::Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     // App + event loop
-    let mut app = App::new(false, None);
-    let mut events = EventHandler::new(3);
+    let mut app = App::new(cli.all, cli.port);
+    let mut events = EventHandler::new(cli.interval);
 
     while app.running {
         // Render
