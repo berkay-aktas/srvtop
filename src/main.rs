@@ -3,6 +3,7 @@ mod event;
 mod filter;
 mod scanner;
 mod ui;
+mod update;
 
 use std::io;
 
@@ -12,7 +13,7 @@ use crossterm::{
 };
 use ratatui::prelude::*;
 
-use app::{App, Message};
+use app::App;
 use event::EventHandler;
 
 fn main() -> color_eyre::Result<()> {
@@ -37,21 +38,7 @@ fn main() -> color_eyre::Result<()> {
 
         // Handle events
         if let Some(msg) = events.next() {
-            match msg {
-                Message::Quit => app.running = false,
-                Message::Tick | Message::Refresh => app.refresh(),
-                Message::NavigateUp => {
-                    if app.selected > 0 {
-                        app.selected -= 1;
-                    }
-                }
-                Message::NavigateDown => {
-                    if app.selected + 1 < app.processes.len() {
-                        app.selected += 1;
-                    }
-                }
-                _ => {}
-            }
+            update::update(&mut app, msg);
         }
     }
 
