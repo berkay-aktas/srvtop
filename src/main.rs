@@ -2,6 +2,7 @@ mod app;
 mod event;
 mod filter;
 mod scanner;
+mod ui;
 
 use std::io;
 
@@ -31,13 +32,7 @@ fn main() -> color_eyre::Result<()> {
     while app.running {
         // Render
         terminal.draw(|frame| {
-            frame.render_widget(
-                ratatui::widgets::Paragraph::new(format!(
-                    "srvtop — {} processes (press q to quit)",
-                    app.processes.len()
-                )),
-                frame.area(),
-            );
+            ui::draw(frame, &app);
         })?;
 
         // Handle events
