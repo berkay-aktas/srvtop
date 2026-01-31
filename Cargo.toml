@@ -1,0 +1,17 @@
+[package]
+name = "srvtop"
+version = "0.1.0"
+edition = "2021"
+description = "Like htop, but for your dev servers"
+license = "MIT"
+repository = "https://github.com/berkay-aktas/srvtop"
+keywords = ["tui", "devtools", "server", "monitor"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+ratatui = "0.30"
+crossterm = "0.28"
+listeners = "0.3"
+sysinfo = "0.33"
+clap = { version = "4", features = ["derive"] }
+color-eyre = "0.6"
