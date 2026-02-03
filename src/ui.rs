@@ -9,7 +9,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, SortColumn, SortDirection};
+use crate::app::{App, OwlMood, SortColumn, SortDirection};
 
 const BORDER_SET: border::Set = border::Set {
     top_left: "╭",
@@ -26,19 +26,134 @@ const NAME_MAX_WIDTH: usize = 20;
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
     let chunks = Layout::vertical([
+        Constraint::Length(2),
         Constraint::Length(3),
         Constraint::Min(0),
         Constraint::Length(3),
     ])
     .split(frame.area());
 
-    draw_header(frame, app, chunks[0]);
-    draw_table(frame, app, chunks[1]);
-    draw_footer(frame, app, chunks[2]);
+    draw_header(frame, app, chunks[1]);
+    draw_owl(frame, app, chunks[0], chunks[1]);
+    draw_table(frame, app, chunks[2]);
+    draw_footer(frame, app, chunks[3]);
 
     if app.show_kill_confirm {
         draw_kill_confirm(frame, app);
     }
+}
+
+fn owl_current_mood(app: &App) -> OwlMood {
+    // If mood timer expired, fall back to idle or sleepy
+    if app.owl_mood_until < std::time::Instant::now() {
+        let idle_secs = app.last_action.elapsed().as_secs();
+        if idle_secs > 10 {
+            return OwlMood::Idle; // will render as sleepy via blink cycle
+        }
+        return OwlMood::Idle;
+    }
+    app.owl_mood
+}
+
+fn owl_sprites(mood: OwlMood, tick: u64, idle_secs: u64) -> [&'static str; 3] {
+    match mood {
+        OwlMood::Idle => {
+            if idle_secs > 10 {
+                return [
+                    " {-_-}",
+                    " /)__)",
+                    "\u{2500}\u{256c}\u{2500}\u{2500}\u{256c}\u{2500}",
+                ];
+            }
+            let blink = (tick / 8).is_multiple_of(6);
+            if blink {
+                [
+                    " {-,-}",
+                    " /)__)",
+                    "\u{2500}\u{256c}\u{2500}\u{2500}\u{256c}\u{2500}",
+                ]
+            } else {
+                [
+                    " {\u{25c9},\u{25c9}}",
+                    " /)__)",
+                    "\u{2500}\u{256c}\u{2500}\u{2500}\u{256c}\u{2500}",
+                ]
+            }
+        }
+        OwlMood::LookUp => [
+            " { ,\u{25c9}}",
+            " /)__)",
+            "\u{2500}\u{256c}\u{2500}\u{2500}\u{256c}\u{2500}",
+        ],
+        OwlMood::LookDown => [
+            " {\u{25c9}, }",
+            " /)__)",
+            "\u{2500}\u{256c}\u{2500}\u{2500}\u{256c}\u{2500}",
+        ],
+        OwlMood::Alarmed => [
+            "/{\u{25c9}!\u{25c9}}\\",
+            "/)_!!_(\\",
+            "\u{2500}\u{256c}\u{2500}\u{2500}\u{256c}\u{2500}",
+        ],
+        OwlMood::Flap => {
+            if tick.is_multiple_of(2) {
+                [
+                    "~{\u{25c9},\u{25c9}}~",
+                    " /)__) ",
+                    "\u{2500}\u{256c}\u{2500}\u{2500}\u{256c}\u{2500}",
+                ]
+            } else {
+                [
+                    " {\u{25c9},\u{25c9}} ",
+                    "~/)__)~",
+                    "\u{2500}\u{256c}\u{2500}\u{2500}\u{256c}\u{2500}",
+                ]
+            }
+        }
+        OwlMood::WideEye => [
+            " {\u{2299},\u{2299}}",
+            " /)__)",
+            "\u{2500}\u{256c}\u{2500}\u{2500}\u{256c}\u{2500}",
+        ],
+    }
+}
+
+fn draw_owl(frame: &mut Frame, app: &App, owl_area: Rect, _header_area: Rect) {
+    let elapsed_ms = app.started_at.elapsed().as_millis() as u64;
+    let tick = elapsed_ms / 200;
+    let idle_secs = app.last_action.elapsed().as_secs();
+    let mood = owl_current_mood(app);
+    let sprites = owl_sprites(mood, tick, idle_secs);
+
+    // Row 0-1: owl body (in owl_area, which is 2 rows above header)
+    // Row 2: feet/claws land on the header's top border
+    // We render the body in owl_area, and the feet overlap onto header top
+
+    let body_lines: Vec<Line> = sprites[..2]
+        .iter()
+        .map(|s| {
+            Line::from(Span::styled(
+                *s,
+                Style::default().fg(Color::Yellow),
+            ))
+        })
+        .collect();
+
+    frame.render_widget(Paragraph::new(body_lines), owl_area);
+
+    // Render the feet on top of the header's top-left border area
+    let feet = sprites[2];
+    let feet_area = Rect {
+        x: owl_area.x,
+        y: owl_area.y + 2, // this is the header's top border line
+        width: feet.chars().count() as u16,
+        height: 1,
+    };
+    let feet_line = Line::from(Span::styled(
+        feet,
+        Style::default().fg(Color::Yellow),
+    ));
+    frame.render_widget(Paragraph::new(feet_line), feet_area);
 }
 
 fn draw_header(frame: &mut Frame, app: &App, area: Rect) {
@@ -52,7 +167,7 @@ fn draw_header(frame: &mut Frame, app: &App, area: Rect) {
         Span::styled(
             " srvtop ",
             Style::default()
-                .fg(Color::Magenta)
+                .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         ),
         Span::styled("│", Style::default().fg(Color::DarkGray)),
@@ -151,7 +266,7 @@ fn draw_table(frame: &mut Frame, app: &mut App, area: Rect) {
         .title(Span::styled(
             " Processes ",
             Style::default()
-                .fg(Color::Magenta)
+                .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         ));
 
@@ -189,7 +304,7 @@ fn draw_table(frame: &mut Frame, app: &mut App, area: Rect) {
     let header = Row::new(header_cells.iter().map(|h| {
         Cell::from(h.as_str()).style(
             Style::default()
-                .fg(Color::Magenta)
+                .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         )
     }))
@@ -238,8 +353,18 @@ fn draw_table(frame: &mut Frame, app: &mut App, area: Rect) {
                 port_badge(p.port),
                 Cell::from(p.protocol.clone()).style(Style::default().fg(Color::DarkGray)),
                 Cell::from(cpu_bar(p.cpu_percent)).style(cpu_style),
-                Cell::from(memory_bar(p.memory_bytes, max_memory, &p.memory_display))
-                    .style(Style::default().fg(Color::Blue)),
+                {
+                    let mem_ratio = if max_memory > 0 { p.memory_bytes as f64 / max_memory as f64 } else { 0.0 };
+                    let mem_color = if mem_ratio > 0.8 {
+                        Color::Red
+                    } else if mem_ratio > 0.5 {
+                        Color::Yellow
+                    } else {
+                        Color::Cyan
+                    };
+                    Cell::from(memory_bar(p.memory_bytes, max_memory, &p.memory_display))
+                        .style(Style::default().fg(mem_color))
+                },
                 Cell::from(p.uptime_display.clone())
                     .style(Style::default().fg(Color::DarkGray)),
             ])
@@ -293,55 +418,34 @@ fn draw_footer(frame: &mut Frame, app: &App, area: Rect) {
         Color::Green
     };
 
+    let key_style = Style::default()
+        .fg(Color::Yellow)
+        .add_modifier(Modifier::BOLD);
+    let label_style = Style::default().fg(Color::DarkGray);
+    let sep = Span::styled("│", label_style);
+
     let footer = Line::from(vec![
-        Span::styled(
-            " q",
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" quit ", Style::default().fg(Color::DarkGray)),
-        Span::styled("│", Style::default().fg(Color::DarkGray)),
-        Span::styled(
-            " k",
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" kill ", Style::default().fg(Color::DarkGray)),
-        Span::styled("│", Style::default().fg(Color::DarkGray)),
-        Span::styled(
-            " s",
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" sort ", Style::default().fg(Color::DarkGray)),
-        Span::styled("│", Style::default().fg(Color::DarkGray)),
-        Span::styled(
-            " S",
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" reverse ", Style::default().fg(Color::DarkGray)),
-        Span::styled("│", Style::default().fg(Color::DarkGray)),
-        Span::styled(
-            " a",
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" all ", Style::default().fg(Color::DarkGray)),
-        Span::styled("│", Style::default().fg(Color::DarkGray)),
-        Span::styled(
-            " r",
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" refresh ", Style::default().fg(Color::DarkGray)),
-        Span::styled("│", Style::default().fg(Color::DarkGray)),
+        Span::styled(" q", key_style),
+        Span::styled(" quit ", label_style),
+        sep.clone(),
+        Span::styled(" j/k", key_style),
+        Span::styled(" nav ", label_style),
+        sep.clone(),
+        Span::styled(" x", key_style),
+        Span::styled(" kill ", label_style),
+        sep.clone(),
+        Span::styled(" s", key_style),
+        Span::styled(" sort ", label_style),
+        sep.clone(),
+        Span::styled(" S", key_style),
+        Span::styled(" reverse ", label_style),
+        sep.clone(),
+        Span::styled(" a", key_style),
+        Span::styled(" all ", label_style),
+        sep.clone(),
+        Span::styled(" r", key_style),
+        Span::styled(" refresh ", label_style),
+        sep,
         Span::raw(" "),
         Span::styled(
             format!(" {} ", count),
@@ -370,18 +474,18 @@ fn draw_kill_confirm(frame: &mut Frame, app: &App) {
     let y = (area.height.saturating_sub(popup_height)) / 2;
     let popup_area = Rect::new(x, y, popup_width, popup_height);
 
-    let text = if let Some(p) = app.selected_process() {
+    let text = if let Some((pid, ref name, port)) = app.kill_target {
         Line::from(vec![
             Span::raw("Kill "),
             Span::styled(
-                &p.name,
+                name.clone(),
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::raw(format!(" (PID {}) on ", p.pid)),
+            Span::raw(format!(" (PID {}) on ", pid)),
             Span::styled(
-                format!(":{}", p.port),
+                format!(":{}", port),
                 Style::default()
                     .fg(Color::Green)
                     .add_modifier(Modifier::BOLD),

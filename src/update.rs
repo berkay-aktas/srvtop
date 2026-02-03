@@ -1,4 +1,4 @@
-use crate::app::{App, Message, SortColumn, SortDirection};
+use crate::app::{App, Message, OwlMood, SortColumn, SortDirection};
 
 pub fn update(app: &mut App, msg: Message) {
     // Tick down status message timer
@@ -24,6 +24,7 @@ pub fn update(app: &mut App, msg: Message) {
             app.refresh();
             app.status_message = Some("Refreshed".to_string());
             app.status_timer = 3;
+            app.set_owl_mood(OwlMood::Flap, 800);
         }
         Message::NavigateUp => {
             if app.show_kill_confirm {
@@ -35,6 +36,7 @@ pub fn update(app: &mut App, msg: Message) {
                 app.selected = app.processes.len() - 1;
             }
             app.scrollbar_state = app.scrollbar_state.position(app.selected);
+            app.set_owl_mood(OwlMood::LookUp, 500);
         }
         Message::NavigateDown => {
             if app.show_kill_confirm {
@@ -46,17 +48,20 @@ pub fn update(app: &mut App, msg: Message) {
                 app.selected = 0;
             }
             app.scrollbar_state = app.scrollbar_state.position(app.selected);
+            app.set_owl_mood(OwlMood::LookDown, 500);
         }
         Message::Kill => {
-            if !app.show_kill_confirm && app.selected_process().is_some() {
-                app.show_kill_confirm = true;
+            if !app.show_kill_confirm {
+                if let Some(p) = app.selected_process() {
+                    app.kill_target = Some((p.pid, p.name.clone(), p.port));
+                    app.show_kill_confirm = true;
+                    app.set_owl_mood(OwlMood::Alarmed, 2000);
+                }
             }
         }
         Message::ConfirmKill => {
             if app.show_kill_confirm {
-                if let Some(process) = app.selected_process() {
-                    let pid = process.pid;
-                    let name = process.name.clone();
+                if let Some((pid, name, _port)) = app.kill_target.take() {
                     match kill_process(pid) {
                         Ok(()) => {
                             app.status_message = Some(format!("Killed {} (PID {})", name, pid));
@@ -66,6 +71,7 @@ pub fn update(app: &mut App, msg: Message) {
                         }
                     }
                     app.status_timer = 3;
+                    app.set_owl_mood(OwlMood::Alarmed, 1500);
                 }
                 app.show_kill_confirm = false;
                 app.refresh();
@@ -73,6 +79,7 @@ pub fn update(app: &mut App, msg: Message) {
         }
         Message::CancelKill => {
             app.show_kill_confirm = false;
+            app.kill_target = None;
         }
         Message::ToggleAll => {
             if app.show_kill_confirm {
@@ -81,6 +88,7 @@ pub fn update(app: &mut App, msg: Message) {
             app.show_all = !app.show_all;
             app.selected = 0;
             app.refresh();
+            app.set_owl_mood(OwlMood::WideEye, 800);
         }
         Message::CycleSort => {
             if app.show_kill_confirm {

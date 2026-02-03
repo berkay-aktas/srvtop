@@ -7,6 +7,16 @@ use crate::filter;
 use crate::scanner::{self, DevProcess};
 
 #[derive(Clone, Copy, PartialEq)]
+pub enum OwlMood {
+    Idle,
+    LookUp,
+    LookDown,
+    Alarmed,
+    Flap,
+    WideEye,
+}
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum SortColumn {
     Pid,
     Name,
@@ -45,6 +55,7 @@ pub struct App {
     pub sort_column: SortColumn,
     pub sort_direction: SortDirection,
     pub show_kill_confirm: bool,
+    pub kill_target: Option<(u32, String, u16)>,
     pub status_message: Option<String>,
     pub status_timer: u8,
     pub system: System,
@@ -52,6 +63,10 @@ pub struct App {
     pub last_refresh: Instant,
     pub scrollbar_state: ScrollbarState,
     pub tick_rate_secs: u64,
+    pub started_at: Instant,
+    pub owl_mood: OwlMood,
+    pub owl_mood_until: Instant,
+    pub last_action: Instant,
 }
 
 impl App {
@@ -68,6 +83,7 @@ impl App {
             sort_column: SortColumn::Port,
             sort_direction: SortDirection::Ascending,
             show_kill_confirm: false,
+            kill_target: None,
             status_message: None,
             status_timer: 0,
             system,
@@ -75,9 +91,19 @@ impl App {
             last_refresh: Instant::now(),
             scrollbar_state: ScrollbarState::default(),
             tick_rate_secs,
+            started_at: Instant::now(),
+            owl_mood: OwlMood::Idle,
+            owl_mood_until: Instant::now(),
+            last_action: Instant::now(),
         };
         app.refresh();
         app
+    }
+
+    pub fn set_owl_mood(&mut self, mood: OwlMood, duration_ms: u64) {
+        self.owl_mood = mood;
+        self.owl_mood_until = Instant::now() + std::time::Duration::from_millis(duration_ms);
+        self.last_action = Instant::now();
     }
 
     pub fn refresh(&mut self) {
@@ -159,6 +185,7 @@ mod tests {
             sort_column: SortColumn::Port,
             sort_direction: SortDirection::Ascending,
             show_kill_confirm: false,
+            kill_target: None,
             status_message: None,
             status_timer: 0,
             system: System::new(),
@@ -166,6 +193,10 @@ mod tests {
             last_refresh: Instant::now(),
             scrollbar_state: ScrollbarState::default(),
             tick_rate_secs: 3,
+            started_at: Instant::now(),
+            owl_mood: OwlMood::Idle,
+            owl_mood_until: Instant::now(),
+            last_action: Instant::now(),
         };
         let mut procs = make_processes();
         app.sort(&mut procs);
@@ -184,6 +215,7 @@ mod tests {
             sort_column: SortColumn::Port,
             sort_direction: SortDirection::Descending,
             show_kill_confirm: false,
+            kill_target: None,
             status_message: None,
             status_timer: 0,
             system: System::new(),
@@ -191,6 +223,10 @@ mod tests {
             last_refresh: Instant::now(),
             scrollbar_state: ScrollbarState::default(),
             tick_rate_secs: 3,
+            started_at: Instant::now(),
+            owl_mood: OwlMood::Idle,
+            owl_mood_until: Instant::now(),
+            last_action: Instant::now(),
         };
         let mut procs = make_processes();
         app.sort(&mut procs);
@@ -208,6 +244,7 @@ mod tests {
             sort_column: SortColumn::Name,
             sort_direction: SortDirection::Ascending,
             show_kill_confirm: false,
+            kill_target: None,
             status_message: None,
             status_timer: 0,
             system: System::new(),
@@ -215,6 +252,10 @@ mod tests {
             last_refresh: Instant::now(),
             scrollbar_state: ScrollbarState::default(),
             tick_rate_secs: 3,
+            started_at: Instant::now(),
+            owl_mood: OwlMood::Idle,
+            owl_mood_until: Instant::now(),
+            last_action: Instant::now(),
         };
         let mut procs = make_processes();
         app.sort(&mut procs);
@@ -233,6 +274,7 @@ mod tests {
             sort_column: SortColumn::Port,
             sort_direction: SortDirection::Ascending,
             show_kill_confirm: false,
+            kill_target: None,
             status_message: None,
             status_timer: 0,
             system: System::new(),
@@ -240,6 +282,10 @@ mod tests {
             last_refresh: Instant::now(),
             scrollbar_state: ScrollbarState::default(),
             tick_rate_secs: 3,
+            started_at: Instant::now(),
+            owl_mood: OwlMood::Idle,
+            owl_mood_until: Instant::now(),
+            last_action: Instant::now(),
         };
         assert!(app.selected_process().is_none());
     }

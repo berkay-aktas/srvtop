@@ -18,9 +18,11 @@ impl EventHandler {
     }
 
     pub fn next(&mut self) -> Option<Message> {
-        let timeout = self
+        let until_tick = self
             .tick_rate
             .saturating_sub(self.last_tick.elapsed());
+        // Cap poll at 200ms so the mascot animation stays smooth
+        let timeout = until_tick.min(Duration::from_millis(200));
 
         if event::poll(timeout).ok()? {
             if let Event::Key(key) = event::read().ok()? {
@@ -46,9 +48,9 @@ impl EventHandler {
             KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 Some(Message::Quit)
             }
-            KeyCode::Up => Some(Message::NavigateUp),
-            KeyCode::Down => Some(Message::NavigateDown),
-            KeyCode::Char('k') => Some(Message::Kill),
+            KeyCode::Up | KeyCode::Char('k') => Some(Message::NavigateUp),
+            KeyCode::Down | KeyCode::Char('j') => Some(Message::NavigateDown),
+            KeyCode::Char('x') => Some(Message::Kill),
             KeyCode::Char('y') => Some(Message::ConfirmKill),
             KeyCode::Char('n') | KeyCode::Esc => Some(Message::CancelKill),
             KeyCode::Char('r') => Some(Message::Refresh),
