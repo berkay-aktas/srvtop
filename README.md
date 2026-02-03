@@ -1,35 +1,41 @@
 # srvtop
 
-Like `htop`, but for your dev servers.
+> Like `htop`, but for your dev servers.
 
-A cross-platform TUI tool that auto-discovers development servers running on localhost and lets you monitor and kill them. Zero configuration required.
+Auto-discovers processes listening on localhost, shows live CPU/memory stats, and lets you kill them.
+Cross-platform. Zero config.
 
-## Install
+<p align="center">
+  <img src="demo.gif" alt="demo" width="700">
+</p>
+
+---
+
+## Get started
 
 ```
 cargo install srvtop
 ```
 
-## Usage
+```bash
+srvtop              # dev servers only
+srvtop --all        # everything listening
+srvtop -n 1         # 1s refresh
+srvtop -p 3000      # single port
+```
 
-```
-srvtop              # show dev-relevant servers
-srvtop --all        # show all listening processes
-srvtop -n 5         # refresh every 5 seconds
-srvtop -p 3000      # filter to port 3000
-```
+---
 
 ## Keybindings
 
-| Key | Action |
-|-----|--------|
-| Up/Down | Navigate rows |
-| k | Kill selected process |
-| r | Force refresh |
-| a | Toggle all/dev-only |
-| s | Cycle sort column |
-| q | Quit |
+`j` `k` navigate &nbsp;&middot;&nbsp; `x` kill &nbsp;&middot;&nbsp; `s` sort &nbsp;&middot;&nbsp; `S` reverse &nbsp;&middot;&nbsp; `a` toggle all &nbsp;&middot;&nbsp; `r` refresh &nbsp;&middot;&nbsp; `q` quit
 
-## License
+---
 
-MIT
+## How it works
+
+Scans TCP listeners via `listeners` crate &rarr; maps to PIDs &rarr; enriches with CPU/memory via `sysinfo` &rarr; filters to known dev tools and ports unless `--all`.
+
+**Platforms** &mdash; Windows, macOS, Linux
+
+**License** &mdash; MIT
